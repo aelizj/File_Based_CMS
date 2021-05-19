@@ -1,0 +1,15 @@
+body {
+  padding: 1em;
+  font-family: sans-serif;
+  background-color: rgb(89, 104, 103);
+  color: darkturquoise;
+}
+
+.flash.success {
+  padding: 10px;
+  background: #FFFF99;
+}
+
+a {
+  color: rgb(205, 252, 255);
+}

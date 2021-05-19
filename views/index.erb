@@ -1,0 +1,16 @@
+
+<h1>The File System</h1>
+
+<form id="new" method="get" action="/new">
+  <button type="submit">+ File</button>
+</form>
+
+<ul>
+  <% @files.each do |file| %>
+    <li>
+      <a href="/<%= file %>"><%= file %></a>
+      <a href="/<%= file %>/edit">Edit</a>
+    </li>
+  <% end %>
+</ul>
+
