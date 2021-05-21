@@ -5,9 +5,18 @@ body {
   color: darkturquoise;
 }
 
+.flash.error {
+  padding: 10px;
+  background-color: rgb(255, 152, 152);
+  color: black;
+  font-weight: 600;
+}
+
 .flash.success {
   padding: 10px;
   background: #FFFF99;
+  color: black;
+  font-weight: 600;
 }
 
 a {
@@ -16,4 +25,9 @@ a {
 
 form.inline {
   display:inline;
+}
+
+.user-status {
+  font-style: italic;
+  font-size: 0.9em;
 }

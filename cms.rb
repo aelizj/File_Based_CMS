@@ -3,9 +3,11 @@ require "sinatra/reloader"
 require "sinatra/content_for"
 require "tilt/erubis"
 require "redcarpet"
+require "yaml"
+require "bcrypt"
 
 
-## CONFIG----------------------------------------------------------------------
+#* CONFIG----------------------------------------------------------------------
 configure do
   enable :sessions
   set :session_secret, 'very secret secret'
@@ -14,7 +16,7 @@ end
 
 root = File.expand_path("..", __FILE__)
 
-## METHODS---------------------------------------------------------------------
+#* METHODS---------------------------------------------------------------------
 # Returns specific path based on environment
 def data_path
   if ENV["RACK_ENV"] == "test"
@@ -22,6 +24,15 @@ def data_path
   else
     File.expand_path("../data", __FILE__)
   end
+end
+
+def load_user_credentials
+  credentials_path = if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/users/yml", __FILE__)
+  else
+    File.expand_path("../users.yml", __FILE__)
+  end
+  YAML.load_file(credentials_path)
 end
 
 # Given markdown text, returns HTML text 
@@ -43,12 +54,23 @@ def load_file_content(path)
   end
 end
 
-## BEFORE----------------------------------------------------------------------
+def user_signed_in?
+  session.key?(:username)
+end
+
+def restrict_access
+  unless user_signed_in?
+    session[:error] = "You must be signed in to do that"
+    redirect "/"
+  end
+end
+
+#* BEFORE----------------------------------------------------------------------
 before do 
   @files = Dir.glob(File.join(data_path, "*")).map { |path| File.basename(path) }
 end
 
-## ROUTES----------------------------------------------------------------------
+#* ROUTES----------------------------------------------------------------------
 # Load home page
 get "/" do
   pattern = File.join(data_path, "*")
@@ -57,11 +79,14 @@ end
 
 # Add a new file
 get "/new" do
+  restrict_access
   erb :new, layout: :layout
 end
 
 # Create new file
 post "/create" do
+  restrict_access
+
   filename = params[:filename].to_s
 
   if filename.size == 0
@@ -91,39 +116,53 @@ get "/users/signin" do
   erb :signin, layout: :layout
 end
 
+def valid_credentials?(username, password)
+  credentials = load_user_credentials
+
+  if credentials.key?(username)
+    bcrypt_password = BCrypt::Password.new(credentials[username])
+    bcrypt_password = password
+  else
+    false
+  end
+end
+
 # User login
 post "/users/signin" do
-  if params[:username] == "admin" && params[:password] == "secret"
-    session[:username] = params[:username]
+  username = params[:username]
+
+  if valid_credentials?(username, params[:password])
+    session[:username] = username
     session[:success] = "Welcome!"
     redirect "/"
   else
     session[:error] = "Invalid credentials"
     status 422
     erb :signin, layout: :layout
-  end  
+  end
 end
 
 # User logout
 post "/users/signout" do
   session.delete(:username)
-  session[:success] = "You have been signed out."
+  session[:success] = "You have been signed out"
   redirect "/"
 end
 
 # View a specific file
 get "/:filename" do
-  file_path = File.join(data_path, params[:filename])
+  file_path = File.join(data_path, File.basename(params[:filename]))
   if File.exist?(file_path)
     load_file_content(file_path)
   else
-    session[:error] = "#{params[:filename]} does not exist."
+    session[:error] = "#{params[:filename]} does not exist"
     redirect "/"
   end
 end
 
 # Edit an existing file
 get "/:filename/edit" do
+  restrict_access
 
   file_path = File.join(data_path, params[:filename])
 
@@ -135,6 +174,7 @@ end
 
 # Update an existing file #!  could use validation
 post "/:filename" do
+  restrict_access
   file_path = File.join(data_path, params[:filename])
   
   File.write(file_path, params[:content])
@@ -145,10 +185,11 @@ end
 
 # Delete an existing file
 post "/:filename/delete" do
+  restrict_access
   file_path = File.join(data_path, params[:filename])
 
   File.delete(file_path)
 
-  session[:success] = "#{params[:filename]} has been deleted "
+  session[:success] = "#{params[:filename]} has been deleted"
   redirect "/"
 end
