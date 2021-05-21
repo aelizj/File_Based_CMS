@@ -1,9 +1,9 @@
 <a href="/">Home</a>
 
-
-
-<form action="/" method="post">
-  <label for="file_name">File name:</label>
-  <input id="file_name" type="text" value="<%= params[:file_name] %>">
-  <button type="submit">Create list</button>
+<form method="post" action="/create">
+  <label for="filename">File name:</label>
+  <div>
+    <input name="filename" id="filename" />
+    <button type="submit">Create</button>
+  </div>
 </form>

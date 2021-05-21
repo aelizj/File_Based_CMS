@@ -29,8 +29,6 @@ class AppTest < MiniTest::Test #?----------------------------------------------
       file.write(content)
     end
   end
-
-
   
   def test_index
     create_document("about.md")
@@ -44,8 +42,6 @@ class AppTest < MiniTest::Test #?----------------------------------------------
     assert_includes last_response.body, "changes.txt"
   end
 
-  
- 
   def test_get_file
     create_document("history.txt", "Pothos")
 
@@ -56,8 +52,6 @@ class AppTest < MiniTest::Test #?----------------------------------------------
     assert_includes last_response.body, "Pothos"
   end
 
-  
-  
   def test_get_nonexistent_file
     get "/notafile.ext"
 
@@ -70,8 +64,6 @@ class AppTest < MiniTest::Test #?----------------------------------------------
     get "/"
     refute_includes last_response.body, "notafile.ext does not exist"
   end
-
- 
   
   def test_viewing_markdown_file
     create_document("about.md" , "# Header")
@@ -83,8 +75,6 @@ class AppTest < MiniTest::Test #?----------------------------------------------
     assert_includes last_response.body, "<h1>Header"
   end
 
-
-
   def test_editing_file
     create_document("changes.txt")
 
@@ -94,8 +84,6 @@ class AppTest < MiniTest::Test #?----------------------------------------------
     assert_includes last_response.body, "<textarea"
     assert_includes last_response.body, %q(button type="submit")
   end
-
-
 
   def test_updating_file
     post "/changes.txt", content: "new content"
@@ -110,16 +98,77 @@ class AppTest < MiniTest::Test #?----------------------------------------------
     assert_includes last_response.body, "new content"
   end
 
-
-
   def test_add_file
     get "/new"
 
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, "<input"
+    assert_includes last_response.body, %q(<button type="submit")
+  end
+  
+  def test_create_new_file
+    post "/create", filename: "test.txt"
+    assert_equal 302, last_response.status
+    
+    get last_response["Location"]
+    assert_includes last_response.body, "test.txt has been created"
+
+    get "/"
+    assert_includes last_response.body, "test.txt"
   end
 
+  def test_new_file_without_filename
+    post "/create", filename: ""
+    assert_equal 422, last_response.status
+    assert_includes last_response.body, "A name is required"
+  end
 
+  def test_deleting_file
+    create_document("test.txt")
 
-  def test_create_file
+    post "test.txt/delete"
 
+    assert_equal 302, last_response.status
+
+    get last_response["Location"]
+    assert_includes last_response.body, "test.txt has been deleted"
+
+    get "/"
+    refute_includes last_response.body, "test.txt"
+  end
+
+  def test_signin_form
+    get "/users/signin"
+
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, "<input"
+    assert_includes last_response.body, %q(<button type="submit")
+  end
+
+  def test_signin
+    post "/users/signin", username: "admin", password: "secret"
+    assert_equal 302, last_response.status
+
+    get last_response["Location"]
+    assert_includes last_response.body, "Welcome"
+    assert_includes last_response.body, "Signed in as admin"
+  end
+
+  def test_signin_with_bad_credentials
+    post "/users/signin", username: "guest", password: "1234"
+    assert_equal 422, last_response.status
+    assert_includes last_response.body, "Invalid credentials"
+  end
+
+  def test_logout
+    post "/users/login", username: "admin", password: "secret"
+    get last_response["Location"]
+    assert_includes last_response.body, "Welcome"
+
+    post "/users/signout"
+    get last_response["Locataion"]
+    
+    assert_includes last_response.body, "You have been signed out"
+    assert_includes last_response.body, "Login"
   end
 end

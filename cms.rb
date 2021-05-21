@@ -48,7 +48,7 @@ before do
   @files = Dir.glob(File.join(data_path, "*")).map { |path| File.basename(path) }
 end
 
-#! ROUTES----------------------------------------------------------------------
+## ROUTES----------------------------------------------------------------------
 # Load home page
 get "/" do
   pattern = File.join(data_path, "*")
@@ -60,6 +60,65 @@ get "/new" do
   erb :new, layout: :layout
 end
 
+# Create new file
+post "/create" do
+  filename = params[:filename].to_s
+
+  if filename.size == 0
+    session[:error] = "A name is required"
+    status 422
+    erb :new, layout: :layout
+  elsif File.extname(filename).empty?
+    session[:error] = "Please enter a valid file name."
+    status 422
+    erb :new, layout: :layout
+  elsif @files.include?(filename)
+    session[:error] = "FIle name must be unique."
+    status 422
+    erb :new, layout: :layout
+  else
+    file_path = File.join(data_path, filename)
+
+    File.write(file_path, "")
+    @files << filename
+    session[:success] = "#{filename} has been created."
+    redirect "/"
+  end
+end
+
+
+
+
+# Render login form
+get "/users/signin" do
+  erb :signin, layout: :layout
+end
+
+
+# User login
+post "/users/signin" do
+  if params[:username] == "admin" && params[:password] == "secret"
+    session[:username] = params[:username]
+    session[:success] = "Welcome!"
+    redirect "/"
+  else
+    session[:error] = "Invalid credentials"
+    status 422
+    erb :signin
+  end  
+end
+
+
+# User logout
+post "/users/signout" do
+  session.delete(:username)
+  session[:success] = "You have been signed out."
+  redirect "/"
+end
+
+
+
+
 # View a specific file
 get "/:filename" do
   file_path = File.join(data_path, params[:filename])
@@ -70,7 +129,6 @@ get "/:filename" do
     redirect "/"
   end
 end
-
 # Edit an existing file
 get "/:filename/edit" do
 
@@ -92,16 +150,11 @@ post "/:filename" do
   redirect "/"
 end 
 
+post "/:filename/delete" do
+  file_path = File.join(data_path, params[:filename])
 
+  File.delete(file_path)
 
-# Create new file
-post "/" do
-  if params[:new_file].nil?
-    session[:error] = "Invalid"
-    erb :new, layout: :layout
-  else
-    # @files << params[:new_file]
-    # session[:success] = "#{params[:new_file]} was created."
-    redirect "/"
-  end
+  session[:success] = "#{params[:filename]} has been deleted "
+  redirect "/"
 end

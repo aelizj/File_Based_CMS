@@ -13,3 +13,7 @@ body {
 a {
   color: rgb(205, 252, 255);
 }
+
+form.inline {
+  display:inline;
+}
