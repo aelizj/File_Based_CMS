@@ -86,14 +86,10 @@ post "/create" do
   end
 end
 
-
-
-
 # Render login form
 get "/users/signin" do
   erb :signin, layout: :layout
 end
-
 
 # User login
 post "/users/signin" do
@@ -104,10 +100,9 @@ post "/users/signin" do
   else
     session[:error] = "Invalid credentials"
     status 422
-    erb :signin
+    erb :signin, layout: :layout
   end  
 end
-
 
 # User logout
 post "/users/signout" do
@@ -115,9 +110,6 @@ post "/users/signout" do
   session[:success] = "You have been signed out."
   redirect "/"
 end
-
-
-
 
 # View a specific file
 get "/:filename" do
@@ -129,6 +121,7 @@ get "/:filename" do
     redirect "/"
   end
 end
+
 # Edit an existing file
 get "/:filename/edit" do
 
@@ -150,6 +143,7 @@ post "/:filename" do
   redirect "/"
 end 
 
+# Delete an existing file
 post "/:filename/delete" do
   file_path = File.join(data_path, params[:filename])
 
